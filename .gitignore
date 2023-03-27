@@ -10,8 +10,8 @@
 *.userosscache
 *.sln.docstates
 
-# g++ execute files[.exe 파일 안 올림]
-*.exe
+# g++ execute files[파일을 올리지 않을 확장자명 입력]
+# *.exe
 
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
