@@ -11,114 +11,122 @@
 #define RankingString "<지렁이 게임 랭킹>\n\n1st\n2nd\n3rd\n4th\n5th\n\n[돌아가기 : 'Z']\n\n\n"
 #define GameOverString "죽었답니다\n이번 게임의 점수는\n\n\n\n[돌아가기 : 'Z']\n"
 
+#include <algorithm>            //sort 배열 정렬 사용
+#include <iomanip>              //setw 함수 사용
 #include <stdio.h>
-#include <conio.h>
-#include <algorithm>
 #include <vector>
-#include <iomanip>
 #include "screen.hpp"
 #include "Musoeun.hpp"
 
+/* 랭킹 출력하는 함수*/
 void RecordOutput(vector<int> record);
 
 int main()
 {
-    char screenBuf[1000];
-    int width = 34;
-    int height = 12;
-    int isGamePlaying = 10;
-    int KeyEvent = 1;
-    int KeyInput = 0;
-    int recordScore;
+    char screenBuf[1000];           //화면 출력용 버퍼
+    char string[300];               //스크린 별 출력할 내용 저장
+    int width = 34;                 //버퍼의 너비
+    int height = 12;                //버퍼의 높이
+    int isGamePlaying = 10;         //현재 게임 상태 저장용 (목록 : 3~8번째 줄)
+    int KeyEvent = 1;               //키 입력 이벤트 저장
+    int KeyInput = 0;               //입력한 키 값 저장
+    int recordScore;                //게임 종료 시 점수 가져오는 변수
+    vector<int> Record(5, 0);       //점수 기록용 vector 배열
+    
 
-    char string[300];
+    MuSoeun::MGameLoop GamePlay;                        //게임 루프 실행용 객체 생성
+    SetCursorState(false);                              //콘솔 내 커서 끄기
+    clearBuffer(screenBuf, width, height);              //화면 버퍼 초기화
+    setTitleToScreenBuffer(screenBuf, width, height);   //타이틀 화면 출력
 
-    vector<int> Record(5, 0);
-
-    SetCursorState(false);
-
+    //게임 종료할 때 까지 (isGamePlaying == 0) 화면 출력
     while (isGamePlaying)
     {
-        MuSoeun::MGameLoop GamePlay;
-        clearBuffer(screenBuf, width, height);
+        KeyEvent = 1;               //키 이벤트 초기화
 
-        setTitleToScreenBuffer(screenBuf, width, height);
-
-        while (isGamePlaying)
+        //게임 상태에 따른 화면 출력
+        switch (isGamePlaying)
         {
-            KeyEvent = 1;
+        case TitleState:        //타이틀
+            setTitleToScreenBuffer(screenBuf, width, height);
+            strcpy(string, TitleString); break;
+        case GameStartState:    //게임 시작 ~ 게임 오버
+            recordScore = GamePlay.Run();   //게임 시작, 게임 오버 시 점수 가져오기
+            system("cls");
+            setGameOverToScreenBuffer(screenBuf, width, height);
+            strcpy(string, GameOverString);
+            isGamePlaying = GameOverState; break;
+        case DescriptionState:  //게임 설명
+            setDescriptionToScreenBuffer(screenBuf, width, height);
+            strcpy(string, DescriptionString); break;
+        case RankingState:      //게임 랭킹
+            setRankingToScreenBuffer(screenBuf, width, height);
+            strcpy(string, RankingString); break;
+        default:
+            break;
+        }
 
-            switch (isGamePlaying)
-            {
-            case TitleState:
-                setTitleToScreenBuffer(screenBuf, width, height);
-                strcpy(string, TitleString); break;
-            case GameStartState:
-                recordScore = GamePlay.Run();
-                system("cls");
-                setGameOverToScreenBuffer(screenBuf, width, height);
-                strcpy(string, GameOverString);
-                isGamePlaying = GameOverState; break;
-            case DescriptionState:
-                setDescriptionToScreenBuffer(screenBuf, width, height);
-                strcpy(string, DescriptionString); break;
-            case RankingState:
-                setRankingToScreenBuffer(screenBuf, width, height);
-                strcpy(string, RankingString); break;
-            default:
-                break;
+        //스크린 버퍼 출력 후 스크린 내용 출력
+        cout << screenBuf << "\ninput>";
+        writeStringToBuffer(string, 5, 2);
+
+        //게임 오버 시 점수 기록 저장
+        if (isGamePlaying == GameOverState) {
+            gotoxy(5, 4);
+            cout << recordScore << " 점입니다.";
+
+            //게임 최고기록 달성 시 내용 출력
+            if (recordScore >= Record[0]) {
+                gotoxy(5, 6);
+                cout << "<최고 기록 달성>";
             }
 
-            cout << screenBuf << "\ninput>";
-            //printf("%s\ninput>", screenBuf);
+            //점수 기록 후 점수가 높은 순으로 정렬 (5위 까지만 저장)
+            Record.push_back(recordScore);
+            sort(Record.rbegin(), Record.rend()); Record.erase(Record.end() - 1);
+        }
 
-            writeStringToBuffer(string, 5, 2);
-            if (isGamePlaying == GameOverState) {
-                gotoxy(5, 4);
-                cout << recordScore << " 점입니다.";
-                if (recordScore >= Record[0]) {
-                    gotoxy(5, 6);
-                    cout << "<최고 기록 달성>";
-                }
-                Record.push_back(recordScore);
-                sort(Record.rbegin(), Record.rend()); Record.erase(Record.end() - 1);
+        //게임 랭킹 출력 시 게임 기록 출력
+        if (isGamePlaying == RankingState) RecordOutput(Record);
 
-            }
-            if (isGamePlaying == RankingState) RecordOutput(Record);
-
-            while (KeyEvent)
+        //게임 상태 별 맞는 키 입력할 때 까지 반복
+        while (KeyEvent)
+        {
+            if (_kbhit())   //키 입력 감지 시
             {
-                if (_kbhit())
+                KeyInput = _getch();    //입력한 키 값 저장
+
+                //게임 상태 별 키 입력
+                switch (isGamePlaying)
                 {
-                    KeyInput = _getch();
-                    switch (isGamePlaying)
+                //메뉴 선택
+                case TitleState:
+                    switch (KeyInput)
                     {
-                    case TitleState:
-                        switch (KeyInput)
-                        {
-                        case '1': isGamePlaying = GameStartState; break;
-                        case '2': isGamePlaying = DescriptionState; break;
-                        case '3': isGamePlaying = RankingState; break;
-                        case '4': case 'q': isGamePlaying = 0; system("cls"); break;
-                        default: continue;
-                        } break;
-                    case GameStartState:
-                    case DescriptionState:
-                    case RankingState:
-                    case GameOverState:
-                        if (KeyInput == 'z' || KeyInput == 'Z') { isGamePlaying = TitleState; break; }
-                    default:
-                        continue;
-                    }
-                    KeyEvent = 0;
-                    system("cls");
+                    case '1': isGamePlaying = GameStartState; break;
+                    case '2': isGamePlaying = DescriptionState; break;
+                    case '3': isGamePlaying = RankingState; break;
+                    case '4': case 'q': isGamePlaying = 0; system("cls"); break;
+                    default: continue;
+                    } break;
+
+                //뒤로 가기
+                case GameStartState:
+                case DescriptionState:
+                case RankingState:
+                case GameOverState:
+                    if (KeyInput == 'z' || KeyInput == 'Z') { isGamePlaying = TitleState; break; }
+                default:
+                    continue;
                 }
+                KeyEvent = 0;   //맞는 키 입력 시 반복 종료
+                system("cls");  //화면 지우기
             }
         }
     }
 
+    //게임 종료 시
     cout << "게임을 종료하였습니다." << endl;
-
     return 0;
 }
 
