@@ -11,6 +11,7 @@
 #include <stdio.h>
 #include <vector>
 #include "screen.hpp"
+#include "setConsole.hpp"
 #include "Musoeun.hpp"
 
 /*게임 상태에 따른 화면 출력*/
@@ -20,11 +21,9 @@ char screenBuf[1000];           //화면 출력용 버퍼
 int width = 52;                 //버퍼의 너비
 int height = 18;                //버퍼의 높이
 int isGamePlaying = 10;         //현재 게임 상태 저장용 (목록 : 3~8번째 줄)
-int KeyEvent = 1;               //키 입력 이벤트 저장
-int KeyInput = 0;               //입력한 키 값 저장
-int recordScore;                //게임 종료 시 점수 가져오는 변수
+int recordScore = 0;                //게임 종료 시 점수 가져오는 변수
 int setSpeed;
-int finalScore;
+int finalScore = 0;
 
 MuSoeun::MGameLoop GamePlay;                        //게임 루프 실행용 객체 생성
 
@@ -37,11 +36,11 @@ int main()
     while (isGamePlaying)
     {
         //스크린 버퍼 출력 후 스크린 내용 출력
-        SetTextColor(Gray, Black);
+        SetTextColor(0b0111, 0b0000);
         cout << screenBuf;
         GameStateCheck();
 
-        SetTextColor(Black, White);
+        SetTextColor(0b0000, 0b1111);
         system("cls");  //화면 지우기
     }
     //게임 종료 시
@@ -53,15 +52,16 @@ void GameStateCheck() {
     switch (isGamePlaying)
     {
     case TitleState:        //타이틀
-        isGamePlaying = setTitleToScreen();
+        isGamePlaying = setTitleToScreen(finalScore);
         break;
     case GameStartState:    //게임 시작 ~ 게임 오버
         setSpeed = selectGameDifficulty();
-        SetTextColor(Black, White);
+        SetTextColor(0b0000, 0b1111);
         system("cls");
 
         finalScore = GamePlay.Run(setSpeed);   //게임 시작, 게임 오버 시 점수 가져오기
-        setGameOverToScreen(finalScore);
+        recordScore = setGameOverToScreen(recordScore, finalScore);
+        //recordScore = 0;
         isGamePlaying = TitleState;
         break;
     case DescriptionState:  //게임 설명

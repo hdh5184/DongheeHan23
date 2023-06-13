@@ -184,10 +184,12 @@
   <ItemGroup>
     <ClCompile Include="main.cpp" />
     <ClCompile Include="screen.cpp" />
+    <ClCompile Include="setConsole.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Musoeun.hpp" />
     <ClInclude Include="screen.hpp" />
+    <ClInclude Include="setConsole.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -2,46 +2,48 @@
 
 //방향키 값
 #define Key_Enter 13
-#define Key_Up 72
 #define Key_Left 75
 #define Key_Right 77
-#define Key_Down 80
+
+#define Move_Up 1
+#define Move_Down 2
+#define Move_Left 3
+#define Move_Right 4
 
 #include <conio.h>
 #include <iostream>
 #include <vector>
 #include <windows.h>
+#include "setConsole.hpp"
 using namespace std;
 
 namespace MuSoeun
 {
+    /*
     void SetTextColor(int backColor, int textColor) {
         HANDLE handle = GetStdHandle(STD_OUTPUT_HANDLE);
         SetConsoleTextAttribute(handle, (backColor << 4) + textColor);
     }
+   
+    void gotoxy(int x, int y) {
+        COORD pos = { x, y }; // 좌표 저장
+        SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), pos); // pos에서 저장된 좌표로 커서 이동
+    }
+
+    void SetCursorState(bool visible) {
+        CONSOLE_CURSOR_INFO consoleCursorInfo;
+        consoleCursorInfo.bVisible = visible;
+        consoleCursorInfo.dwSize = 1;
+        SetConsoleCursorInfo(GetStdHandle(STD_OUTPUT_HANDLE), &consoleCursorInfo);
+    }
+    */
+    
 
     //게임 스크린의 너비, 높이
     int width = 50, height = 20;
 
-    class Componant {
+    class Object {
     public:
-
-        Componant() {}
-        ~Componant() {}
-
-        void Start() { }
-
-        void Update() { }
-    };
-
-    class Componant1 : public Componant {
-
-    };
-
-
-    class Object : public Componant {
-    public:
-        vector<Componant> ComList; //오브젝트의 컴포넌트를 저장하는 리스트
         int CoordX = 10, CoordY = 5;
 
         Object() {}
@@ -51,8 +53,6 @@ namespace MuSoeun
         void Render(char* screenBuf, int x, int y, char cr) {
             screenBuf[(width + 1) * y + x] = cr;
         }
-
-        //void setComponant() { }
     };
 
     class Snake : public Object {
@@ -80,20 +80,9 @@ namespace MuSoeun
         vector<Apple> apples;       //사과
         Snake snake;
         Apple apple;
+        
 
-        /*커서 이동*/
-        void gotoxy(int x, int y) {
-            COORD pos = { x, y }; // 좌표 저장
-            SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), pos); // pos에서 저장된 좌표로 커서 이동
-        }
-
-        /* 커서 숨기기*/
-        void SetCursorState(bool visible) {
-            CONSOLE_CURSOR_INFO consoleCursorInfo;
-            consoleCursorInfo.bVisible = visible;
-            consoleCursorInfo.dwSize = 1;
-            SetConsoleCursorInfo(GetStdHandle(STD_OUTPUT_HANDLE), &consoleCursorInfo);
-        }
+        
 
         /* 스크린, 뱀, 사과를 출력하는 함수*/
         void Draw() {
@@ -111,7 +100,22 @@ namespace MuSoeun
 
             //뱀, 사과가 그려진 스크린 출력
             gotoxy(0, 0);
-            cout << screenBuf << endl;
+
+            for (int i = 0; i < strlen(screenBuf); i++)
+            {
+                switch (screenBuf[i]) {
+                case 'x':
+                    SetTextColor(0b0111, 0b1001); break;
+                case 'O':
+                    SetTextColor(0b0111, 0b0001); break;
+                case '$':
+                    SetTextColor(0b0111, 0b1100); break;
+                default:
+                    SetTextColor(0b0111, 0b0010); break;
+                }
+                cout << screenBuf[i];
+            }
+            cout << endl;
         }
 
         /*스크린 버퍼 초기화*/
@@ -194,16 +198,38 @@ namespace MuSoeun
         }
 
         /*뱀 이동하는 함수*/
-        int Move(int keyInput) {
-            int crash = 0;  //뱀 충돌 확인용
+        int Move(int SnakeMove, int keyInput) {
+            //int crash = 0;  //뱀 충돌 확인용
 
-            //방향키 입력에 따른 뱀 이동 방향 저장
             switch (keyInput)
             {
-            case Key_Up: snake.CoordY--; break;
-            case Key_Down: snake.CoordY++; break;
-            case Key_Left: snake.CoordX--; break;
-            case Key_Right: snake.CoordX++; break;
+            case Key_Left:
+                switch (SnakeMove)
+                {
+                case Move_Up: SnakeMove = Move_Left; break;
+                case Move_Down: SnakeMove = Move_Right; break;
+                case Move_Left: SnakeMove = Move_Down; break;
+                case Move_Right: SnakeMove = Move_Up; break;
+                }
+                break;
+            case Key_Right:
+                switch (SnakeMove)
+                {
+                case Move_Up: SnakeMove = Move_Right; break;
+                case Move_Down: SnakeMove = Move_Left; break;
+                case Move_Left: SnakeMove = Move_Up; break;
+                case Move_Right: SnakeMove = Move_Down; break;
+                }
+                break;
+            }
+
+            //방향키 입력에 따른 뱀 이동 방향 저장
+            switch (SnakeMove)
+            {
+            case Move_Up: snake.CoordY--; break;
+            case Move_Down: snake.CoordY++; break;
+            case Move_Left: snake.CoordX--; break;
+            case Move_Right: snake.CoordX++; break;
             default: break;
             }
 
@@ -211,20 +237,14 @@ namespace MuSoeun
 
             //뱀이 사과에 닿으면 사과 재생성
             if (snake.CoordX == apple.CoordX && snake.CoordY == apple.CoordY) {
-                SummonApple(); score++; speed--;
+                SummonApple(); score++;
+                speed = (speed == 0) ? 0 : speed - 1;
             }
             else snakeLine.erase(snakeLine.begin());
 
-            //뱀 충돌 여부 검사
-            crash = Crash(snake.CoordX, snake.CoordY);
-
-            //뱀, 사과 출력
-            Draw();
-
-            //충돌 유무 반환 (0 : 충돌함 / 1 : 충돌 안함)
-            return crash;
+            return SnakeMove;
         }
-
+        
         /*충돌 유무 검사*/
         int Crash(int x, int y) {
             //뱀 머리가 벽에 닿거나 뱀의 몸에 닿으면 충돌 값 반환
@@ -238,50 +258,52 @@ namespace MuSoeun
     class MGameLoop : public Scene {
     public:
         int GamePlay = 1;           //게임 실행 유무(0 : 게임 오버 / 1 : 게임 실행 중)
-        int SnakeMove = Key_Right;  //초기 뱀 이동 방향 저장
+        int SnakeMove = Move_Right;  //초기 뱀 이동 방향 저장
         int keyInput;               //방향키 입력 값 저장용
 
         /*게임 실행 루프*/
         int Run(int setSpeed) {
             GamePlay = 1;           //게임 실행
-            SnakeMove = Key_Right;  //초기 뱀 이동 방향은 오른 쪽
-            score = 0; speed = 1000 / setSpeed; //점수, 속도 초기화
+            SnakeMove = Move_Right;  //초기 뱀 이동 방향은 오른 쪽
+            score = 0; speed = setSpeed; //점수, 속도 초기화
 
             //스크린 화면 초기화 후 오브젝트 초기화 및 생성
             ClearScreenBuf();
             ObjectCreate();
-            MuSoeun::SetTextColor(Gray, Black);
+            SetTextColor(0b0111, 0b0000);
 
             //게임 실행 루프
             while (GamePlay) {
                 //뱀, 사과가 그려진 스크린 출력
                 Draw();
+
+                SetTextColor(0b0000, 0b1111);
                 cout << "게임을 나가시려면 'Enter'를 누르시오" << endl;
 
                 //속도에 따른 스크린 버퍼 출력 - 뱀 이동속도
                 Sleep(speed);
 
+                int keyEvent = 0;
+
                 //키 입력 감지 시
                 if (_kbhit()) {
-                    keyInput = _getch();    //입력 키 값 반환
-                    if (keyInput == Key_Enter) break;
-
-                    //[방향키는 키 값을 두 번 반환하며, 처음 반환값은 224다.]
-                    if (keyInput == 224) {
-                        keyInput = _getch();    //두 번쨰 반환 값은 방향키에 맞는 값 반환
-
-                        //뱀이 이동하는 방향의 반대 방향으로 전환을 방지함
-                        if ((SnakeMove == Key_Left && keyInput != Key_Right) || (SnakeMove == Key_Right && keyInput != Key_Left) ||
-                            (SnakeMove == Key_Up && keyInput != Key_Down) || (SnakeMove == Key_Down && keyInput != Key_Up)) {
-                            SnakeMove = keyInput;   //변경한 뱀 이동 방향 값 저장
-                        }
+                    switch (_getch()) {
+                    case Key_Enter:
+                        return score;
+                    case 224:
+                        keyInput = _getch();
+                        if (keyInput == Key_Left || keyInput == Key_Right)
+                        break;
                     }
-                    keyInput = 0;
                 }
+                SnakeMove = Move(SnakeMove, keyInput);
+                keyInput = 0;
 
-                //현재 점수 줄력 후 뱀 이동 및 사과 생성
-                cout << "현재 점수 : " << score << endl;
-                GamePlay = Move(SnakeMove);
+                //뱀 충돌 여부 검사
+                GamePlay = Crash(snake.CoordX, snake.CoordY);
+
+                SetTextColor(0b0000, 0b1111);
+                cout << "점수 : " << score << "    이동 속도 : " << 200 - speed << endl;
             }
 
             //게임 오버 시 점수 기록에 저장할 점수 반환
@@ -289,4 +311,3 @@ namespace MuSoeun
         }
     };
 }
-
