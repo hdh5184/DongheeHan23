@@ -14,3 +14,7 @@
 - 뱀 게임 플레이 중 스크린, 텍스트 색 추가
 - main.cpp, screen.cpp, Musoeun.hpp 내 공통적으로 사용하는 함수 모듈화(setConsole.cpp, setConsole.hpp)
 - 난이도 추가 및 보완
+
+* 230614 20기준 변경된 요소들:
+- Musoeun.hpp 내 부분 수정
+- 게임 시작 시 생성할 사과 선택 기능 추가

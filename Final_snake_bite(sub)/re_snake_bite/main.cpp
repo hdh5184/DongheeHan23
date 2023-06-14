@@ -6,23 +6,23 @@
 #define GameOverState 99		//게임 랭킹
 #define GameQuit 0
 
-#include <algorithm>            //sort 배열 정렬 사용
 #include <iomanip>              //setw 함수 사용
 #include <stdio.h>
 #include <vector>
+#include "Musoeun.hpp"
 #include "screen.hpp"
 #include "setConsole.hpp"
-#include "Musoeun.hpp"
 
-/*게임 상태에 따른 화면 출력*/
+/*현재 게임 상태 별 스크린 출력*/
 void GameStateCheck();
 
 char screenBuf[1000];           //화면 출력용 버퍼
 int width = 52;                 //버퍼의 너비
 int height = 18;                //버퍼의 높이
 int isGamePlaying = 10;         //현재 게임 상태 저장용 (목록 : 3~8번째 줄)
+int setSpeed = 0;
+int summonApple = 0;
 int recordScore = 0;                //게임 종료 시 점수 가져오는 변수
-int setSpeed;
 int finalScore = 0;
 
 MuSoeun::MGameLoop GamePlay;                        //게임 루프 실행용 객체 생성
@@ -52,21 +52,21 @@ void GameStateCheck() {
     switch (isGamePlaying)
     {
     case TitleState:        //타이틀
-        isGamePlaying = setTitleToScreen(finalScore);
+        isGamePlaying = setTitleToScreen(recordScore);
         break;
     case GameStartState:    //게임 시작 ~ 게임 오버
         setSpeed = selectGameDifficulty();
+        summonApple = selectGameSummonApple();
         SetTextColor(0b0000, 0b1111);
         system("cls");
 
-        finalScore = GamePlay.Run(setSpeed);   //게임 시작, 게임 오버 시 점수 가져오기
+        finalScore = GamePlay.Run(setSpeed, summonApple);   //게임 시작, 게임 오버 시 점수 가져오기
         recordScore = setGameOverToScreen(recordScore, finalScore);
-        //recordScore = 0;
         isGamePlaying = TitleState;
         break;
     case DescriptionState:  //게임 설명
         setDescriptionToScreen();
-        isGamePlaying = 10;
+        isGamePlaying = TitleState;
         break;
     case GameQuit:
         isGamePlaying = GameQuit;

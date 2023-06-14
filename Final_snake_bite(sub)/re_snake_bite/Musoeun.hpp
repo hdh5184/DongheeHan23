@@ -1,6 +1,5 @@
 #define _CRT_SECURE_NO_WARNINGS
 
-//방향키 값
 #define Key_Enter 13
 #define Key_Left 75
 #define Key_Right 77
@@ -15,42 +14,18 @@
 #include <vector>
 #include <windows.h>
 #include "setConsole.hpp"
+
 using namespace std;
 
 namespace MuSoeun
 {
-    /*
-    void SetTextColor(int backColor, int textColor) {
-        HANDLE handle = GetStdHandle(STD_OUTPUT_HANDLE);
-        SetConsoleTextAttribute(handle, (backColor << 4) + textColor);
-    }
-   
-    void gotoxy(int x, int y) {
-        COORD pos = { x, y }; // 좌표 저장
-        SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), pos); // pos에서 저장된 좌표로 커서 이동
-    }
-
-    void SetCursorState(bool visible) {
-        CONSOLE_CURSOR_INFO consoleCursorInfo;
-        consoleCursorInfo.bVisible = visible;
-        consoleCursorInfo.dwSize = 1;
-        SetConsoleCursorInfo(GetStdHandle(STD_OUTPUT_HANDLE), &consoleCursorInfo);
-    }
-    */
     
-
-    //게임 스크린의 너비, 높이
-    int width = 50, height = 20;
 
     class Object {
     public:
         int CoordX = 10, CoordY = 5;
 
-        Object() {}
-        ~Object() {}
-
-        //자식 클래스가 상속받은 후 메서드를 재정의?할 수 있도록 virtual 설정
-        void Render(char* screenBuf, int x, int y, char cr) {
+        void virtual Render(char* screenBuf, int width, int x, int y, char cr) {
             screenBuf[(width + 1) * y + x] = cr;
         }
     };
@@ -58,26 +33,38 @@ namespace MuSoeun
     class Snake : public Object {
     public:
         
+        void Render(char* screenBuf, int width, int x, int y, char cr) {   //뱀의 머리
+            screenBuf[(width + 1) * y + x] = cr;
+        }
+
+        void Render(char* screenBuf, int width, int x, int y) {            //뱀의 몸통
+            screenBuf[(width + 1) * y + x] = 'x';
+        }
     };
 
     class Apple : public Object {
     public:
-        
+        void Render(char* screenBuf, int width, int x, int y) {            //사과
+            screenBuf[(width + 1) * y + x] = '$';
+        }
     };
 
-    class Scene
+    class Scene : public Object
     {
     private:
         char screenBuf[51 * 20 + 1];    //스크린 출력용 버퍼
+        //게임 스크린의 너비, 높이
+        int width = 50, height = 20;
 
     public:
 
         int score;                  //점수 저장용
         int speed;                  //속도 저장용
 
-        vector<Object> objList;     //오브젝트 리스트
+
+
         vector<Snake> snakeLine;    //뱀 (콘솔 창 한 문자당 리스트 요소 한 개씩)
-        vector<Apple> apples;       //사과
+        vector<Apple> Apples;
         Snake snake;
         Apple apple;
         
@@ -89,14 +76,19 @@ namespace MuSoeun
             ReleaseScreenBuf(); //스크린 버퍼 초기화
             for (int i = 0; i < snakeLine.size(); i++) {
                 //스크린, 뱀의 좌표, 스크린 가로 길이를 매개변수로
-                snakeLine[i].Render(screenBuf, snakeLine[i].CoordX, snakeLine[i].CoordY, 'x');
+                snakeLine[i].Render(screenBuf, width, snakeLine[i].CoordX, snakeLine[i].CoordY);
 
                 //머리 부분은 다른 문자로
-                if (i == snakeLine.size() - 1) snakeLine[i].Render(screenBuf, snakeLine[i].CoordX, snakeLine[i].CoordY, 'O');
+                if (i == snakeLine.size() - 1) snakeLine[i].Render(screenBuf, width, snakeLine[i].CoordX, snakeLine[i].CoordY, 'O');
             }
 
-            //사과 출력
-            apple.Render(screenBuf, apple.CoordX, apple.CoordY, '$');
+            for (int j = 0; j < Apples.size(); j++)
+            {
+                //사과 출력
+                Apples[j].Render(screenBuf, width, Apples[j].CoordX, Apples[j].CoordY);
+            }
+
+            
 
             //뱀, 사과가 그려진 스크린 출력
             gotoxy(0, 0);
@@ -150,22 +142,30 @@ namespace MuSoeun
         //if screenBut != nullptr(?) delete ㄱㄱ
 
         /*초기 게임 시작 시 오브젝트 초기화 및 생성*/
-        void ObjectCreate() {
+        void ObjectCreate(int setSummonApple) {
             snakeLine.clear();
+            Apples.clear();
             snake.CoordX = 10;
-            snake.CoordY = 5;
+            snake.CoordY = 10;
 
-            for (int i = 0; i < 10; i++)
+            for (int i = 0; i < 5; i++)
             {
                 snake.CoordX++;
                 snakeLine.push_back(snake);
             }
 
-            for (int i = 0; i < snakeLine.size(); i++)
-                objList.push_back(snakeLine[i]);
-
-            //사과 소환
-            SummonApple();
+            
+            switch (setSummonApple)
+            {
+            case 5:
+                apple.CoordX = 33; apple.CoordY = 8; Apples.push_back(apple);
+                apple.CoordX = 27; apple.CoordY = 12; Apples.push_back(apple);
+            case 3:
+                apple.CoordX = 27; apple.CoordY = 8; Apples.push_back(apple);
+                apple.CoordX = 33; apple.CoordY = 12; Apples.push_back(apple);
+            case 1:
+                apple.CoordX = 30; apple.CoordY = 10; Apples.push_back(apple);
+            }
         }
 
         /*사과 생성하는 함수*/
@@ -189,7 +189,16 @@ namespace MuSoeun
                         //exit(1); 자리 중복 테스트용
                         re++; falseSummon = true; break;
                     }
+                    for (int j = 0; j < Apples.size(); j++)
+                    {
+                        if (Apples[j].CoordX == apple.CoordX && Apples[j].CoordY == apple.CoordY) {
+                            //exit(1); 자리 중복 테스트용
+                            re++; falseSummon = true; break;
+                        }
+                    }
                 }
+
+                
 
                 //뱀과 사과 자리 중복 시 난수 재설정
                 if (falseSummon) continue;
@@ -236,12 +245,19 @@ namespace MuSoeun
             snakeLine.push_back(snake);
 
             //뱀이 사과에 닿으면 사과 재생성
-            if (snake.CoordX == apple.CoordX && snake.CoordY == apple.CoordY) {
-                SummonApple(); score++;
-                speed = (speed == 0) ? 0 : speed - 1;
+            for (int i = 0; i < Apples.size(); i++)
+            {
+                if (snake.CoordX == Apples[i].CoordX && snake.CoordY == Apples[i].CoordY) {
+                    SummonApple(); score++;
+                    Apples.push_back(apple);
+                    speed = (speed == 0) ? 0 : speed - 1;
+                    Apples.erase(remove_if(Apples.begin(), Apples.end(), [&](Apple a)
+                        { return a.CoordX == snake.CoordX && a.CoordY == snake.CoordY; }), Apples.end());
+                    return SnakeMove;
+                }
+                else continue;
             }
-            else snakeLine.erase(snakeLine.begin());
-
+            snakeLine.erase(snakeLine.begin());
             return SnakeMove;
         }
         
@@ -262,14 +278,14 @@ namespace MuSoeun
         int keyInput;               //방향키 입력 값 저장용
 
         /*게임 실행 루프*/
-        int Run(int setSpeed) {
+        int Run(int setSpeed, int setSummonApple) {
             GamePlay = 1;           //게임 실행
             SnakeMove = Move_Right;  //초기 뱀 이동 방향은 오른 쪽
             score = 0; speed = setSpeed; //점수, 속도 초기화
 
             //스크린 화면 초기화 후 오브젝트 초기화 및 생성
             ClearScreenBuf();
-            ObjectCreate();
+            ObjectCreate(setSummonApple);
             SetTextColor(0b0111, 0b0000);
 
             //게임 실행 루프

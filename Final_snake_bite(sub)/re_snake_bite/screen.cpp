@@ -1,8 +1,9 @@
 #include "screen.hpp"
 #include "setConsole.hpp"
-#include <stdio.h>
-#include <cstring>
+#include <conio.h>
 #include <iomanip>
+#include <iostream>
+#include <windows.h>
 
 #define Key_Enter 13
 #define Key_Left 75
@@ -38,25 +39,7 @@ int clearBuffer(char* screenBuf, int width, int height)
 	return 0;
 }
 
-int writeStringToScreen(const char* string, int x, int y)
-{
-	gotoxy(x, y);
-	for (int i = 0; i < strlen(string); i++)
-	{
-		if (string[i] == '\n') {
-			gotoxy(x, y + 1);
-			y++;
-		}
-		else printf("%c", string[i]);
-	}
-
-	gotoxy(6, y);
-
-
-	return 0;
-}
-
-int setTitleToScreen(int finalScore)
+int setTitleToScreen(int recordScore)
 {
 	int Select = 1;
 	int KeyEnent = 1;
@@ -67,8 +50,8 @@ int setTitleToScreen(int finalScore)
 		gotoxy(12, 3); cout << "내가 뱀 띠라서 만든 뱀 게임";
 		gotoxy(20, 4); cout << "Snake Bite";
 
-		SetTextColor(0b0111, 0b1100);
-		gotoxy(16, 6); cout << "최고 기록 - " << setw(4) << right << finalScore << "점";
+		SetTextColor(0b0001, 0b1111);
+		gotoxy(16, 6); cout << "최고 기록 - " << setw(4) << right << recordScore << "점";
 
 		SetTextColor(0b0111, 0b0000);
 		gotoxy(5, 8); cout << "[좌, 우 방향키를 눌러 메뉴를 선택하세요.]";
@@ -124,7 +107,7 @@ int setDescriptionToScreen() {
 	gotoxy(20, 6); cout << "<게임설명>";
 	gotoxy(2, 8); cout << "1. 좌,우 방향키로 뱀을 이동시킨다.";
 	gotoxy(2, 9); cout << "2. 사과를 먹으면 뱀의 길이가 한 칸 늘어난다.";
-	gotoxy(2, 10); cout << "3. 먹은 사과 개수에 따라 뱀의 속도가 증가한다.";
+	gotoxy(2, 10); cout << "3. 사과를 먹을 수록 뱀의 속도가 증가한다.";
 	gotoxy(2, 11); cout << "4. 뱀 머리가 벽이나 몸에 부딪히면 게임이 끝난다.";
 
 	SetTextColor(0b0111, 0b0101);
@@ -151,36 +134,32 @@ int selectGameDifficulty() {
 		gotoxy(12, 3); cout << "내가 뱀 띠라서 만든 뱀 게임";
 		gotoxy(20, 4); cout << "Snake Bite";
 
-		SetTextColor(0b0111, 0b0101);
-		gotoxy(16, 6); cout << "<게임 난이도 설정>";
-
 		SetTextColor(0b0111, 0b0000);
-		gotoxy(4, 8); cout << "[좌, 우 방향키를 눌러 난이도를 선택하세요.]";
-		gotoxy(4, 9); cout << "===========================================";
-		gotoxy(5, 10); cout << " 매우 쉬움      쉬움     중간     어려움 ";
+		gotoxy(4, 7); cout << "===========================================";
+		gotoxy(5, 8); cout << " 매우 쉬움      쉬움     중간     어려움 ";
 
 		SetTextColor(0b0111, 0b0100);
 		switch (Select) {
 		case 0:
-			gotoxy(5, 10); cout << "<매우 쉬움>";
-			gotoxy(4, 12); cout << "속도 : 느림(50)        *속도는 최대 200까지";
+			gotoxy(5, 8); cout << "<매우 쉬움>";
+			gotoxy(4, 6); cout << "속도 : 느림(50)        *속도는 최대 200까지";
 			break;
 		case 1:
-			gotoxy(20, 10); cout << "<쉬움>";
-			gotoxy(4, 12); cout << "속도 : 중간(100)       *속도는 최대 200까지";
+			gotoxy(20, 8); cout << "<쉬움>";
+			gotoxy(4, 6); cout << "속도 : 중간(100)       *속도는 최대 200까지";
 			break;
 		case 2:
-			gotoxy(29, 10); cout << "<중간>";
-			gotoxy(4, 12); cout << "속도 : 높음(150)       *속도는 최대 200까지";
+			gotoxy(29, 8); cout << "<중간>";
+			gotoxy(4, 6); cout << "속도 : 높음(150)       *속도는 최대 200까지";
 			break;
 		case 3:
-			gotoxy(38, 10); cout << "<어려움>";
-			gotoxy(4, 12); cout << "속도 : 최대 속도(200)  *속도는 최대 200까지";
+			gotoxy(38, 8); cout << "<어려움>";
+			gotoxy(4, 6); cout << "속도 : 최대 속도(200)  *속도는 최대 200까지";
 			break;
 		}
 
 		SetTextColor(0b0111, 0b0000);
-		gotoxy(4, 13); cout << "===========================================";
+		//gotoxy(4, 13); cout << "===========================================";
 		gotoxy(9, 14); cout << "[Enter를 눌러 게임을 시작합니다.]";
 
 		while (KeyEnent) {
@@ -206,6 +185,56 @@ int selectGameDifficulty() {
 		}
 		KeyEnent = 1;
 		Select %= 4;
+	}
+}
+
+int selectGameSummonApple() {
+	int Select = 0;
+	int KeyEnent = 1;
+	int keyInput = 1;
+	while (1) {
+		SetTextColor(0b0111, 0b0000);
+		gotoxy(4, 11); cout << "===========================================";
+		gotoxy(5, 12); cout << "   사과 1개      사과 3개      사과 5개 ";
+
+		SetTextColor(0b0111, 0b0101);
+		switch (Select) {
+		case 0:
+			gotoxy(7, 12); cout << "<사과 1개>";
+			gotoxy(4, 10); cout << "사과를 1개까지 생성한다.";
+			break;
+		case 1:
+			gotoxy(21, 12); cout << "<사과 3개>";
+			gotoxy(4, 10); cout << "사과를 3개까지 생성한다.";
+			break;
+		case 2:
+			gotoxy(35, 12); cout << "<사과 5개>";
+			gotoxy(4, 10); cout << "사과를 5개까지 생성한다.";
+			break;
+		}
+
+		while (KeyEnent) {
+			if (_kbhit()) {
+				keyInput = _getch();
+				if (keyInput == 224) keyInput = _getch();
+				if (Select == 0) Select = 3;
+
+				switch (keyInput) {
+				case Key_Left: Select--; break;
+				case Key_Right: Select++; break;
+				case Key_Enter:
+					switch (Select % 3)
+					{
+					case 0: return 1;
+					case 1: return 3;
+					case 2: return 5;
+					}
+				}
+				KeyEnent = 0;
+			}
+		}
+		KeyEnent = 1;
+		Select %= 3;
 	}
 }
 
